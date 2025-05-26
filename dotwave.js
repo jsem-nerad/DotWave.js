@@ -1,7 +1,7 @@
 /**
  * DotWave.js - Interactive Dots Background Library
- * Create animated dot backgrounds that react to cursor movements
- * @version 1.0.0
+ * Create animated dot backgrounds that react to cursor movement
+ * @version 1.1.0
  */
 (function(global) {
     'use strict';
@@ -27,7 +27,12 @@
             friction: 0.97,              // Movement friction
             maxSpeed: 3,                 // Maximum dot speed
             responsive: true,            // Automatically resize with container
-            zIndex: -1                   // Canvas z-index
+            zIndex: -1,                  // Canvas z-index
+            mouseSpeedDecay: 0.85,       // How quickly mouse speed decays
+            maxMouseSpeed: 15,           // Maximum mouse speed to prevent jumps
+            dotStretch: true,            // Enable dot stretching based on velocity
+            dotStretchMultiplier: 3,     // How much to stretch dots (multiplier)
+            dotStretchMaxStretch: 20     // Maximum stretch amount (prevents extreme stretching)
         };
         
         // Merge options with defaults
@@ -48,6 +53,8 @@
         this.mouseSpeedY = 0;
         this.animationFrame = null;
         this.resizeTimeout = null;
+        this.lastFrameTime = 0;
+        this.isMouseOver = false;
         
         // Initialize the canvas
         this.init();
@@ -91,6 +98,7 @@
         this._addEventListeners();
         
         // Start animation
+        this.lastFrameTime = performance.now();
         this._animate();
     };
     
@@ -145,14 +153,42 @@
      */
     DotWave.prototype._updateCanvasSize = function() {
         const rect = this.container.getBoundingClientRect();
-        this.width = rect.width;
-        this.height = rect.height;
+        const newWidth = rect.width;
+        const newHeight = rect.height;
+        
+        // Store old dimensions for dot repositioning
+        const oldWidth = this.width || newWidth;
+        const oldHeight = this.height || newHeight;
+        
+        this.width = newWidth;
+        this.height = newHeight;
         
         // Set canvas size (with device pixel ratio for retina displays)
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = this.width * dpr;
         this.canvas.height = this.height * dpr;
         this.ctx.scale(dpr, dpr);
+        
+        // Redistribute existing dots proportionally to new canvas size
+        if (this.dots && this.dots.length > 0 && (oldWidth !== newWidth || oldHeight !== newHeight)) {
+            const scaleX = newWidth / oldWidth;
+            const scaleY = newHeight / oldHeight;
+            
+            for (let i = 0; i < this.dots.length; i++) {
+                const dot = this.dots[i];
+                
+                // Scale dot position proportionally
+                dot.x *= scaleX;
+                dot.y *= scaleY;
+                
+                // Handle dots that were in the offscreen buffer area
+                // Clamp them to the new canvas bounds with buffer
+                if (dot.x < -50) dot.x = -50;
+                if (dot.x > newWidth + 50) dot.x = newWidth + 50;
+                if (dot.y < -50) dot.y = -50;
+                if (dot.y > newHeight + 50) dot.y = newHeight + 50;
+            }
+        }
         
         // Center mouse position initially
         this.mouseX = this.width / 2;
@@ -189,8 +225,10 @@
      * Add event listeners for mouse movement and window resize
      */
     DotWave.prototype._addEventListeners = function() {
-        // Mouse movement
-        window.addEventListener('mousemove', this._handleMouseMove.bind(this));
+        // Mouse movement listeners
+        this.container.addEventListener('mousemove', this._handleMouseMove.bind(this));
+        this.container.addEventListener('mouseenter', this._handleMouseEnter.bind(this));
+        this.container.addEventListener('mouseleave', this._handleMouseLeave.bind(this));
         
         // Window resize
         if (this.options.responsive) {
@@ -203,13 +241,45 @@
      * @param {Event} e - Mouse event
      */
     DotWave.prototype._handleMouseMove = function(e) {
-        const rect = this.canvas.getBoundingClientRect();
+        if (!this.isMouseOver) return;
+        
+        const rect = this.container.getBoundingClientRect();
         this.prevMouseX = this.mouseX;
         this.prevMouseY = this.mouseY;
         this.mouseX = e.clientX - rect.left;
         this.mouseY = e.clientY - rect.top;
-        this.mouseSpeedX = this.mouseX - this.prevMouseX;
-        this.mouseSpeedY = this.mouseY - this.prevMouseY;
+        
+        // Calculate raw mouse speed
+        const rawSpeedX = this.mouseX - this.prevMouseX;
+        const rawSpeedY = this.mouseY - this.prevMouseY;
+        
+        // Limit maximum mouse speed to prevent jumps
+        const rawSpeed = Math.sqrt(rawSpeedX * rawSpeedX + rawSpeedY * rawSpeedY);
+        if (rawSpeed > this.options.maxMouseSpeed) {
+            const scale = this.options.maxMouseSpeed / rawSpeed;
+            this.mouseSpeedX = rawSpeedX * scale;
+            this.mouseSpeedY = rawSpeedY * scale;
+        } else {
+            this.mouseSpeedX = rawSpeedX;
+            this.mouseSpeedY = rawSpeedY;
+        }
+    };
+    
+    /**
+     * Handle mouse enter
+     */
+    DotWave.prototype._handleMouseEnter = function() {
+        this.isMouseOver = true;
+    };
+    
+    /**
+     * Handle mouse leave
+     */
+    DotWave.prototype._handleMouseLeave = function() {
+        this.isMouseOver = false;
+        // Gradually reduce mouse speed when leaving
+        this.mouseSpeedX *= 0.5;
+        this.mouseSpeedY *= 0.5;
     };
     
     /**
@@ -223,10 +293,77 @@
     };
     
     /**
+     * Draw a stretched dot based on its velocity
+     * @param {Object} dot - The dot object
+     */
+    DotWave.prototype._drawStretchedDot = function(dot) {
+        if (!this.options.dotStretch) {
+            // Draw regular circle
+            this.ctx.beginPath();
+            this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = this._getRGBA(this.options.dotColor, dot.alpha);
+            this.ctx.fill();
+            return;
+        }
+        
+        // Calculate velocity magnitude
+        const speed = Math.sqrt(dot.vx * dot.vx + dot.vy * dot.vy);
+        
+        // Calculate stretch amount proportional to speed
+        const normalizedSpeed = Math.min(speed / this.options.maxSpeed, 1);
+        let stretchAmount = normalizedSpeed * this.options.dotStretchMultiplier;
+        
+        // Apply maximum stretch limit if defined
+        if (this.options.dotStretchMaxStretch) {
+            stretchAmount = Math.min(stretchAmount, this.options.dotStretchMaxStretch);
+        }
+        
+        // If there's no significant stretch, draw regular circle
+        if (stretchAmount < 0.01) {
+            this.ctx.beginPath();
+            this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = this._getRGBA(this.options.dotColor, dot.alpha);
+            this.ctx.fill();
+            return;
+        }
+        
+        // Calculate stretch parameters
+        const angle = Math.atan2(dot.vy, dot.vx);
+        
+        // Calculate ellipse dimensions
+        const radiusX = dot.radius + stretchAmount;
+        const radiusY = dot.radius;
+        
+        // Save context state
+        this.ctx.save();
+        
+        // Translate to dot position and rotate
+        this.ctx.translate(dot.x, dot.y);
+        this.ctx.rotate(angle);
+        
+        // Draw stretched ellipse
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+        this.ctx.fillStyle = this._getRGBA(this.options.dotColor, dot.alpha);
+        this.ctx.fill();
+        
+        // Restore context state
+        this.ctx.restore();
+    };
+    
+    /**
      * Animation loop
      */
     DotWave.prototype._animate = function() {
         this.animationFrame = requestAnimationFrame(this._animate.bind(this));
+        
+        const currentTime = performance.now();
+        const deltaTime = Math.min(currentTime - this.lastFrameTime, 32); // Cap at ~30fps minimum
+        this.lastFrameTime = currentTime;
+        
+        // Decay mouse speed over time for smoother interaction
+        this.mouseSpeedX *= this.options.mouseSpeedDecay;
+        this.mouseSpeedY *= this.options.mouseSpeedDecay;
         
         // Clear canvas
         this.ctx.clearRect(0, 0, this.width, this.height);
@@ -241,19 +378,23 @@
         for (let i = 0; i < this.dots.length; i++) {
             const dot = this.dots[i];
             
-            // Calculate distance to mouse
-            const dx = this.mouseX - dot.x;
-            const dy = this.mouseY - dot.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // Apply mouse influence if dot is within range
-            if (distance < this.options.influenceRadius) {
-                // Stronger effect when closer
-                const influence = (1 - distance / this.options.influenceRadius) * dot.z;
+            // Apply mouse influence if mouse is over the container
+            if (this.isMouseOver) {
+                // Calculate distance to mouse
+                const dx = this.mouseX - dot.x;
+                const dy = this.mouseY - dot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Add a fraction of mouse speed to dot velocity
-                dot.vx += this.mouseSpeedX * influence * this.options.influenceStrength;
-                dot.vy += this.mouseSpeedY * influence * this.options.influenceStrength;
+                // Apply mouse influence if dot is within range
+                if (distance < this.options.influenceRadius) {
+                    // Stronger effect when closer
+                    const influence = (1 - distance / this.options.influenceRadius) * dot.z;
+                    
+                    // Apply mouse speed influence - keep original strength but make frame-rate independent
+                    const normalizedInfluenceStrength = this.options.influenceStrength * (deltaTime / 16.67);
+                    dot.vx += this.mouseSpeedX * influence * normalizedInfluenceStrength;
+                    dot.vy += this.mouseSpeedY * influence * normalizedInfluenceStrength;
+                }
             }
             
             // Add some randomness to movement
@@ -281,11 +422,8 @@
             if (dot.y < -50) dot.y = this.height + 50;
             if (dot.y > this.height + 50) dot.y = -50;
             
-            // Draw dot
-            this.ctx.beginPath();
-            this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-            this.ctx.fillStyle = this._getRGBA(this.options.dotColor, dot.alpha);
-            this.ctx.fill();
+            // Draw stretched dot
+            this._drawStretchedDot(dot);
         }
     };
     
@@ -338,7 +476,9 @@
         }
         
         // Remove event listeners
-        window.removeEventListener('mousemove', this._handleMouseMove);
+        this.container.removeEventListener('mousemove', this._handleMouseMove);
+        this.container.removeEventListener('mouseenter', this._handleMouseEnter);
+        this.container.removeEventListener('mouseleave', this._handleMouseLeave);
         window.removeEventListener('resize', this._handleResize);
         
         // Remove canvas
@@ -380,6 +520,7 @@
      */
     DotWave.prototype.resume = function() {
         if (!this.animationFrame) {
+            this.lastFrameTime = performance.now();
             this._animate();
         }
     };
