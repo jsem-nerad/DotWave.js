@@ -96,7 +96,12 @@ const dotwave = new DotWave({
     friction: 0.97,              // Movement friction
     maxSpeed: 3,                 // Maximum dot speed
     responsive: true,            // Automatically resize with container
-    zIndex: -1                   // Canvas z-index
+    zIndex: -1,                  // Canvas z-index
+    mouseSpeedDecay: 0.85,       // How quickly mouse speed decays
+    maxMouseSpeed: 15,           // Maximum mouse speed to prevent jumps
+    dotStretch: true,            // Enable dot stretching based on velocity
+    dotStretchMultiplier: 3,     // How much the dots stretch
+    dotStretchMaxStretch: 20     // Maximum stretch amount (prevents extreme stretching)
 });
 ```
 
