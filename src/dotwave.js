@@ -1,7 +1,7 @@
 /**
  * DotWave.js - Interactive Dots Canvas Library
  * Creates animated dots that react to cursor movement
- * @version 1.2.0
+ * @version 1.1.0
  */
 (function(global) {
     'use strict';
@@ -14,26 +14,26 @@
         // Default configuration
         this.defaults = {
             container: 'body',           // Container selector or DOM element
-            numDots: 200,                // Number of dots
+            numDots: 400,                // Number of dots
             dotColor: 'white',           // Dot color (CSS color)
             backgroundColor: 'black',    // Background color
-            dotMinSize: 0.5,             // Minimum dot size
-            dotMaxSize: 2.5,             // Maximum dot size
+            dotMinSize: 1,               // Minimum dot size
+            dotMaxSize: 3,               // Maximum dot size
             dotMinOpacity: 0.5,          // Minimum dot opacity
             dotMaxOpacity: 1,            // Maximum dot opacity
-            influenceRadius: 150,        // Mouse influence radius
-            influenceStrength: 0.08,     // Mouse influence strength
-            randomFactor: 0.03,          // Random movement factor
+            influenceRadius: 100,        // Mouse influence radius
+            influenceStrength: 0.5,      // Mouse influence strength
+            randomFactor: 0.05,          // Random movement factor
             friction: 0.97,              // Movement friction
             maxSpeed: 3,                 // Maximum dot speed
-            responsive: true,            // Automatically resize with container
+            reactive: true,              // Toggle for cursor reactivity
             zIndex: -1,                  // Canvas z-index
             mouseSpeedDecay: 0.85,       // How quickly mouse speed decays
             maxMouseSpeed: 15,           // Maximum mouse speed to prevent jumps
             dotStretch: true,            // Enable dot stretching based on velocity
-            dotStretchMult: 3,           // How much to stretch dots (multiplier)
-            dotMaxStretch: 20,           // Maximum stretch amount (prevents extreme stretching)
-            rotSmoothing: true,          // Enable/disable rotation smoothing of dots
+            dotStretchMult: 10,          // How much to stretch the dots
+            dotMaxStretch: 20,           // Maximum stretch amount
+            rotSmoothing: false,         // Toggle for rotation smoothing of dots
             rotSmoothingIntensity: 150   // Rotation smoothing duration in milliseconds
         };
         
@@ -247,9 +247,7 @@
         this.container.addEventListener('mouseleave', this._handleMouseLeave.bind(this));
         
         // Window resize
-        if (this.options.responsive) {
-            window.addEventListener('resize', this._handleResize.bind(this));
-        }
+        window.addEventListener('resize', this._handleResize.bind(this));
     };
     
     /**
@@ -420,12 +418,16 @@
         this.animationFrame = requestAnimationFrame(this._animate.bind(this));
         
         const currentTime = performance.now();
-        const deltaTime = Math.min(currentTime - this.lastFrameTime, 32); // Cap at ~30fps minimum
+        const deltaTimeMs = Math.min(currentTime - this.lastFrameTime, 32); // Cap at ~30fps minimum
+        const deltaTime = deltaTimeMs / 10; // Normalize to 100fps for frame-rate independence
         this.lastFrameTime = currentTime;
         
-        // Decay mouse speed over time for smoother interaction
-        this.mouseSpeedX *= this.options.mouseSpeedDecay;
-        this.mouseSpeedY *= this.options.mouseSpeedDecay;
+        // Only process mouse speed decay if reactive mode is enabled
+        if (this.options.reactive) {
+            // Decay mouse speed over time for smoother interaction
+            this.mouseSpeedX *= Math.pow(this.options.mouseSpeedDecay, deltaTime);
+            this.mouseSpeedY *= Math.pow(this.options.mouseSpeedDecay, deltaTime);
+        }
         
         // Clear canvas
         this.ctx.clearRect(0, 0, this.width, this.height);
@@ -437,20 +439,25 @@
         }
         
         // Pre-calculate common values for performance
-        const influenceRadius = this.options.influenceRadius;
-        const influenceRadiusSq = influenceRadius * influenceRadius; // Avoid sqrt in distance check
-        const normalizedInfluenceStrength = this.options.influenceStrength * (deltaTime / 16.67);
         const randomFactor = this.options.randomFactor;
-        const friction = this.options.friction;
+        const friction = Math.pow(this.options.friction, deltaTime); // Frame-rate independent friction
         const maxSpeed = this.options.maxSpeed;
         const maxSpeedSq = maxSpeed * maxSpeed;
+        
+        // Pre-calculate mouse influence values only if reactive mode is enabled
+        let influenceRadius, influenceRadiusSq, normalizedInfluenceStrength;
+        if (this.options.reactive) {
+            influenceRadius = this.options.influenceRadius;
+            influenceRadiusSq = influenceRadius * influenceRadius; // Avoid sqrt in distance check
+            normalizedInfluenceStrength = this.options.influenceStrength;
+        }
         
         // Update and draw dots
         for (let i = 0; i < this.dots.length; i++) {
             const dot = this.dots[i];
             
-            // Apply mouse influence if mouse is over the container
-            if (this.isMouseOver) {
+            // Apply mouse influence only if reactive mode is enabled and mouse is over the container
+            if (this.options.reactive && this.isMouseOver) {
                 // Calculate distance to mouse (using squared distance to avoid sqrt)
                 const dx = this.mouseX - dot.x;
                 const dy = this.mouseY - dot.y;
@@ -463,16 +470,16 @@
                     const influence = (1 - distance / influenceRadius) * dot.z;
                     
                     // Apply mouse speed influence
-                    dot.vx += this.mouseSpeedX * influence * normalizedInfluenceStrength;
-                    dot.vy += this.mouseSpeedY * influence * normalizedInfluenceStrength;
+                    dot.vx += this.mouseSpeedX * influence * normalizedInfluenceStrength * deltaTime;
+                    dot.vy += this.mouseSpeedY * influence * normalizedInfluenceStrength * deltaTime;
                 }
             }
             
-            // Add some randomness to movement
-            dot.vx += (Math.random() - 0.5) * randomFactor;
-            dot.vy += (Math.random() - 0.5) * randomFactor;
+            // Add some randomness to movement (frame-rate independent)
+            dot.vx += (Math.random() - 0.5) * randomFactor * deltaTime;
+            dot.vy += (Math.random() - 0.5) * randomFactor * deltaTime;
             
-            // Apply friction to prevent excessive speed
+            // Apply friction to prevent excessive speed (frame-rate independent)
             dot.vx *= friction;
             dot.vy *= friction;
             
@@ -484,9 +491,9 @@
                 dot.vy *= scale;
             }
             
-            // Update position based on velocity and depth
-            dot.x += dot.vx * dot.speedMultiplier;
-            dot.y += dot.vy * dot.speedMultiplier;
+            // Update position based on velocity and depth (frame-rate independent)
+            dot.x += dot.vx * dot.speedMultiplier * deltaTime;
+            dot.y += dot.vy * dot.speedMultiplier * deltaTime;
             
             // Wrap around edges (with a buffer to prevent popping)
             if (dot.x < -50) dot.x = this.width + 50;
@@ -495,7 +502,7 @@
             if (dot.y > this.height + 50) dot.y = -50;
             
             // Draw dot
-            this._drawDot(dot, deltaTime);
+            this._drawDot(dot, deltaTimeMs);
         }
     };
     

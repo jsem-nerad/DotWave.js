@@ -8,7 +8,7 @@ const card1 = new DotWave({
   dotMaxSize: 4,
   influenceRadius: 1000,
   influenceStrength: 0.25,
-  randomFactor: 0.05,
+  dotStretchMult: 5
 });
 
 const card2 = new DotWave({
@@ -21,8 +21,7 @@ const card2 = new DotWave({
   influenceRadius: 100,
   influenceStrength: 0.5,
   randomFactor: 0,
-  dotStretchMult: 10,
-  rotSmoothing: false
+  rotSmoothing: false,
 });
 
 const card3 = new DotWave({
@@ -32,9 +31,8 @@ const card3 = new DotWave({
   numDots: 200,
   dotMinSize: 1,
   dotMaxSize: 5,
-  influenceRadius: 100,
-  influenceStrength: 0.12,
-  randomFactor: 0.25,
+  randomFactor: 0.8,
   dotStretch: false,
-  rotSmoothing: false
+  rotSmoothing: false,
+  reactive: false
 });

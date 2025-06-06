@@ -1,5 +1,3 @@
-
-
 <p align="center">
   <img src="/preview.png" style="width: 20rem; height: auto;" align="center" alt="Preview screenshot">
   <h1>This is DotWave,</h1>
@@ -14,8 +12,8 @@
 
 ## Features
 
-- Depth perception with a parallax effect
-- Customizable (colors, sizes, behavior)
+- Parallax effect for depth perception
+- Fully customizable (colors, sizes, behavior...)
 - Dot stretching
 - Dot rotation smoothing
 - No dependencies
@@ -23,7 +21,7 @@
 
 ## Installation
 
-Download the library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/dotwave.min.js) and include it in your HTML:
+Download the library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in your HTML:
 ```xml
 <script src="dotwave.min.js"></script>
 ```
@@ -31,7 +29,7 @@ Or use it via a remote link like this:
 ```xml
 <script src="https://dotwave.vojtikdortik.eu/src/dotwave.min.js"></script>
 ```
-For modifying the library itself, download the [non-minified version](https://github.com/jsem-nerad/DotWave.js/blob/main/dotwave.js).
+For modifying the library itself, download the [non-minified version](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.js).
 
 ## Basic Usage
 ```xml
@@ -60,30 +58,30 @@ make sure to also do the same to the script containing the DotWave customization
 ```JavaScript
 const dotwave = new DotWave({
   container: 'body',           // Container selector or DOM element
-  numDots: 200,                // Number of dots
+  numDots: 400,                // Number of dots
   dotColor: 'white',           // Dot color (CSS color)
   backgroundColor: 'black',    // Background color
-  dotMinSize: 0.5,             // Minimum dot size
-  dotMaxSize: 2.5,             // Maximum dot size
+  dotMinSize: 1,               // Minimum dot size
+  dotMaxSize: 3,               // Maximum dot size
   dotMinOpacity: 0.5,          // Minimum dot opacity
   dotMaxOpacity: 1,            // Maximum dot opacity
-  influenceRadius: 150,        // Mouse influence radius
-  influenceStrength: 0.08,     // Mouse influence strength
-  randomFactor: 0.03,          // Random movement factor
+  influenceRadius: 100,        // Mouse influence radius
+  influenceStrength: 0.5,      // Mouse influence strength
+  randomFactor: 0.05,          // Random movement factor
   friction: 0.97,              // Movement friction
   maxSpeed: 3,                 // Maximum dot speed
-  responsive: true,            // Automatically resize with container
+  reactive: true,              // Toggle for cursor reactivity
   zIndex: -1,                  // Canvas z-index
   mouseSpeedDecay: 0.85,       // How quickly mouse speed decays
   maxMouseSpeed: 15,           // Maximum mouse speed to prevent jumps
   dotStretch: true,            // Enable dot stretching based on velocity
-  dotStretchMult: 3,           // How much to stretch dots (multiplier)
-  dotMaxStretch: 20,           // Maximum stretch amount (prevents extreme stretching)
-  rotSmoothing: true,          // Enable/disable rotation smoothing of dots
+  dotStretchMult: 10,          // How much to stretch the dots
+  dotMaxStretch: 20,           // Maximum stretch amount
+  rotSmoothing: false,         // Toggle for rotation smoothing of dots
   rotSmoothingIntensity: 150   // Rotation smoothing duration in milliseconds
 });
 ```
-*Note that `rotSmoothing: false` skips the rotation lerping calculations and is therefore more performant than using `rotSmoothingIntensity: 0`*.
+*Note that `rotSmoothing: false` skips the rotation lerping calculations and is therefore more performant than using `rotSmoothingIntensity: 0`, same logic applies to `dotStretch`.*
 
 ### Methods
 ```JavaScript
@@ -98,13 +96,14 @@ dotwave.resume();
 
 // Update options
 dotwave.updateOptions({
-    dotColor: 'blue',
-    numDots: 300
+  dotColor: 'blue',
+  numDots: 300
 });
 
 // Clean up when done
 dotwave.destroy();
 ```
+### While 60Hz works, it is still under development and higher refresh rates (for example 165Hz) are the more safe option.
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a pull request or an issue.
