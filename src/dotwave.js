@@ -2,7 +2,6 @@
  * DotWave.js - Interactive Dots Canvas Library
  * Creates animated dots that react to cursor movement
  * @version 1.1.0
- * Update to test Workflow auto minification
  */
 (function(global) {
     'use strict';
