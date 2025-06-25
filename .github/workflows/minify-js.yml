@@ -1,0 +1,26 @@
+name: Auto Minify JS Files
+
+on:
+  push:
+    paths:
+      - 'src/**'
+
+jobs:
+  minify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Minify JS files
+        uses: docker://devatherock/minify-js:3.1.0
+        with:
+          directory: 'src'
+          add_suffix: true
+          inclusions: |-
+            .*\.js$
+
+      - name: Commit minified files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-minify JS files in /src directory"
