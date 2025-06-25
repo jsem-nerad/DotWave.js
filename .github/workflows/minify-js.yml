@@ -5,6 +5,9 @@ on:
     paths:
       - 'src/**'
 
+permissions:
+  contents: write  # Required to push changes
+
 jobs:
   minify:
     runs-on: ubuntu-latest
