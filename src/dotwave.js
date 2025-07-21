@@ -539,8 +539,27 @@
             'red': 'rgba(255, 0, 0, ' + alpha + ')',
             'green': 'rgba(0, 128, 0, ' + alpha + ')',
             'blue': 'rgba(0, 0, 255, ' + alpha + ')',
-            // Add more named colors as needed
+            'yellow': 'rgba(255, 255, 0, ' + alpha + ')',
+            'orange': 'rgba(255, 165, 0, ' + alpha + ')',
+            'purple': 'rgba(128, 0, 128, ' + alpha + ')',
+            'pink': 'rgba(255, 192, 203, ' + alpha + ')',
+            'brown': 'rgba(165, 42, 42, ' + alpha + ')',
+            'gray': 'rgba(128, 128, 128, ' + alpha + ')',
+            'grey': 'rgba(128, 128, 128, ' + alpha + ')',
+            'cyan': 'rgba(0, 255, 255, ' + alpha + ')',
+            'magenta': 'rgba(255, 0, 255, ' + alpha + ')',
+            'lime': 'rgba(0, 255, 0, ' + alpha + ')',
+            'maroon': 'rgba(128, 0, 0, ' + alpha + ')',
+            'navy': 'rgba(0, 0, 128, ' + alpha + ')',
+            'olive': 'rgba(128, 128, 0, ' + alpha + ')',
+            'teal': 'rgba(0, 128, 128, ' + alpha + ')',
+            'silver': 'rgba(192, 192, 192, ' + alpha + ')',
+            'gold': 'rgba(255, 215, 0, ' + alpha + ')',
+            'indigo': 'rgba(75, 0, 130, ' + alpha + ')',
+            'violet': 'rgba(238, 130, 238, ' + alpha + ')',
+            'turquoise': 'rgba(64, 224, 208, ' + alpha + ')'
         };
+
         
         return namedColors[color.toLowerCase()] || `rgba(255, 255, 255, ${alpha})`;
     };
