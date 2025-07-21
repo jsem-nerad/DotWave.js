@@ -8,7 +8,7 @@
   </div>
 </p>
 
-### Try now on [dotwave.vojtikdortik.eu](https://dotwave.vojtikdortik.eu/)
+### Try now on [dotwave.jsem-nerad.cz](https://dotwave.jsem-nerad.cz/)
 
 ## Features
 
@@ -23,7 +23,7 @@
 
 The most reliable and recommended way to import DotWave is by using the raw minified script directly from GitHub like this:
 ```xml
-<script src="https://dotwave.vojtikdortik.eu/src/dotwave.min.js"></script>
+<script src="https://dotwave.jsem-nerad.cz/src/dotwave.min.js"></script>
 ```
 
 Or You can also download the minified library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in Your HTML:
@@ -43,7 +43,7 @@ For modifying the library itself, download the [non-minified version](https://gi
     <style> body {height: 100vh;} </style>
 </head> 
 <body> 
-    <script src="https://dotwave.vojtikdortik.eu/src/dotwave.min.js"></script>
+    <script src="https://dotwave.jsem-nerad.cz/src/dotwave.min.js"></script>
     <script>
         // Initialize with default options
         const dotwave = new DotWave({container: 'body'});
