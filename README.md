@@ -19,16 +19,18 @@
 - No dependencies
 - Lightweight (~8kB minified)
 
-## Installation
+## Importing DotWave
 
-Download the library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in your HTML:
-```xml
-<script src="dotwave.min.js"></script>
-```
-Or use it via a remote link like this:
+The most reliable and recommended way to import DotWave is by using the raw minified script directly from GitHub like this:
 ```xml
 <script src="https://dotwave.vojtikdortik.eu/src/dotwave.min.js"></script>
 ```
+
+Or You can also download the minified library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in Your HTML:
+```xml
+<script src="/path/to/dotwave.min.js"></script>
+```
+
 For modifying the library itself, download the [non-minified version](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.js).
 
 ## Basic Usage
