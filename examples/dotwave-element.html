@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+  <meta charset="UTF-8"> 
+  <title>DotWave Basic Example</title> 
+
+  <script src="/src/dotwave.js"></script>
+  <script src="/src/dotwave-element.js"></script> <!-- extension library -->
+  
+  <style>
+    /* Styling in CSS */
+    dot-wave {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- DotWave with custom attributes configuration -->
+  <dot-wave 
+    num-dots="200" 
+    dot-color="#FF0000" 
+    background-color="#FFFFFF"
+    influence-radius="150"
+    dot-stretch="true"
+    dot-stretch-mult="5"
+    style="height: 500px;">
+    
+    <!-- Content inside DotWave -->
+    <h1 style="color: rgb(0, 0, 0); font-family: 'Courier New', Courier, monospace;">This is DotWave with custom settings.</h1>
+</dot-wave>
+</body>
+</html>
