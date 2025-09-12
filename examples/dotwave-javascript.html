@@ -1,0 +1,38 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <title>DotWave Basic Example</title> 
+
+    <style>
+        #dotwave-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 500px;
+        } 
+    </style>
+</head> 
+
+<body> 
+    <!-- div element, that will be referenced in the JavaScript code -->
+    <div id="dotwave-container">
+        <!-- Content inside DotWave -->
+        <h1 style="color: rgb(0, 0, 0); font-family: 'Courier New', Courier, monospace;">This is DotWave with custom settings.</h1>
+    </div>
+
+    <script src="/src/dotwave.js"></script>
+    <script>
+        // Creating a new DotWave instance with custom configuration
+        const dotwave = new DotWave({
+            container: '#dotwave-container', 
+            numDots: 200,
+            dotColor: '#FF0000',
+            backgroundColor: '#FFFFFF',
+            influenceRadius: 150,
+            dotStretch: true,
+            dotStretchMult: 5,
+        });
+    </script>
+</body> 
+</html> 
