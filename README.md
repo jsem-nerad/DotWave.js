@@ -19,23 +19,23 @@
 - No dependencies
 - Lightweight (~8kB minified)
 
-# Importing DotWave
+# Importing
 
-The most reliable and recommended way to import DotWave is by using the raw minified script directly from GitHub like this:
+The recommended way to import DotWave is via the remote like this:
 ```xml
 <script src="https://dotwave.jsem-nerad.cz/src/dotwave.min.js"></script>
 ```
 
-Or You can also download the minified library [here](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in Your HTML:
+Or You can also [download it](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.min.js) and include it in Your HTML:
 ```xml
 <script src="/path/to/dotwave.min.js"></script>
 ```
 
 For modifying the library itself, download the [non-minified version](https://github.com/jsem-nerad/DotWave.js/blob/main/src/dotwave.js).
 
-# Basic Usage
+# Usage
 
-## HTML element usage
+## HTML element
 
 To use DotWave as a HTML element, you will first need to additionally import the dotwave-element.min.js extension for the core dotwave library:
 ```xml
@@ -83,9 +83,9 @@ To configure the DotWave element, use the element attributes.
 </dot-wave>
 ```
 
-You can find the [list of all available attributes here](#options-list)
+You can find the [list of all available attributes here](#options-list).
 
-### Configuring DotWave element via JavaScript
+### Configuring the DotWave element via JavaScript
 
 In addition to the HTML element, you can still control the DotWave object using JavaScript including using functions and updating options
 
@@ -126,10 +126,7 @@ dotWave.style.height = '500px';
 document.body.appendChild(dotWave);
 ```
 
-
-
-
-## JavaScript library usage
+## JavaScript library
 
 ```xml
 <div id="dotwave-container" style="height: 400px;"></div>
@@ -162,9 +159,9 @@ To configure DotWave when initializing, use the class options.
 </script>
 ```
 
-You can find the [list of all available attributes here](#options-list)
+You can find the [list of all available attributes here](#options-list).
 
-### Methods
+# Methods
 
 ```JavaScript
 // Initialize
@@ -185,7 +182,8 @@ dotwave.updateOptions({
 // Clean up when done
 dotwave.destroy();
 ```
-## Options list
+
+# Option list
 
 | HTML Attribute        | JavaScript option     | Type    | Default  | Description                                                 |
 |-----------------------|-----------------------|---------|----------|-------------------------------------------------------------|
@@ -212,7 +210,7 @@ dotwave.destroy();
 | rot-smoothing         | rotSmoothing          | boolean | false    | Smoothly rotates dots instead of snapping                   |
 | rotsmoothingintensity | rotSmoothingIntensity | number  | 150      | Rotation smoothing duration (ms)                            |
 
-### For HTML
+## For HTML
 
 ```xml
 <dot-wave 
@@ -240,7 +238,7 @@ dotwave.destroy();
 </dot-wave>
 ```
 
-### For JavaScript
+## For JavaScript
 
 ```JavaScript
 const dotwave = new DotWave({
@@ -269,6 +267,10 @@ const dotwave = new DotWave({
 });
 ```
 > *Note, that  `rotSmoothing: false` skips the rotation lerping calculations and is therefore more performant than using `rotSmoothingIntensity: 0`, same logic applies to `dotStretch`.*
+
+# This is still WIP!
+
+Currently, ***DotWave targets 100 FPS*** and adjusts to the client frame rate using delta time for smooth motion scaling. Lower frame rates *should* work.
 
 # Contributing
 

@@ -1,5 +1,5 @@
 /**
- * DotWave.js - Interactive Dots Canvas Library
+ * DotWave.js - An Interactive Dot Canvas JavaScript Library
  * Creates animated dots that react to cursor movement
  * @version 1.1.0
  */
