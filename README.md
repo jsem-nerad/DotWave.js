@@ -83,7 +83,7 @@ To configure the DotWave element, use the element attributes.
 </dot-wave>
 ```
 
-You can find the [list of all available attributes here](#options-list).
+You can find the [list of all available attributes here](#option-list).
 
 ### Configuring the DotWave element via JavaScript
 
@@ -159,7 +159,7 @@ To configure DotWave when initializing, use the class options.
 </script>
 ```
 
-You can find the [list of all available attributes here](#options-list).
+You can find the [list of all available attributes here](#option-list).
 
 # Methods
 
