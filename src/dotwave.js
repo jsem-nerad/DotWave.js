@@ -241,13 +241,18 @@
      * Add event listeners for mouse movement and window resize
      */
     DotWave.prototype._addEventListeners = function() {
+        this._boundMouseMove = this._handleMouseMove.bind(this);
+        this._boundMouseEnter = this._handleMouseEnter.bind(this);
+        this._boundMouseLeave = this._handleMouseLeave.bind(this);
+        this._boundResize = this._handleResize.bind(this);
+
         // Mouse movement listeners
-        this.container.addEventListener('mousemove', this._handleMouseMove.bind(this));
-        this.container.addEventListener('mouseenter', this._handleMouseEnter.bind(this));
-        this.container.addEventListener('mouseleave', this._handleMouseLeave.bind(this));
+        this.container.addEventListener('mousemove', this._boundMouseMove);
+        this.container.addEventListener('mouseenter', this._boundMouseEnter);
+        this.container.addEventListener('mouseleave', this._boundMouseLeave);
         
         // Window resize
-        window.addEventListener('resize', this._handleResize.bind(this));
+        window.addEventListener('resize', this._boundResize);
     };
     
     /**
@@ -574,10 +579,17 @@
         }
         
         // Remove event listeners
-        this.container.removeEventListener('mousemove', this._handleMouseMove);
-        this.container.removeEventListener('mouseenter', this._handleMouseEnter);
-        this.container.removeEventListener('mouseleave', this._handleMouseLeave);
-        window.removeEventListener('resize', this._handleResize);
+        if (this._boundMouseMove) {
+            this.container.removeEventListener('mousemove', this._boundMouseMove);
+            this.container.removeEventListener('mouseenter', this._boundMouseEnter);
+            this.container.removeEventListener('mouseleave', this._boundMouseLeave);
+            window.removeEventListener('resize', this._boundResize);
+
+            this._boundMouseMove = null;
+            this._boundMouseEnter = null;
+            this._boundMouseLeave = null;
+            this._boundResize = null;
+        }
         
         // Remove canvas
         if (this.canvas && this.canvas.parentNode) {
