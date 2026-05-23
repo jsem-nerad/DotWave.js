@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Minify JS files
-        uses: docker://devatherock/minify-js:3.1.0
+        uses: docker://devatherock/minify-js@sha256:cca5837fabfe5d11d8e751080f9a0de838ebfc58e6fc382c421a22d751b075c0
         with:
           directory: 'src'
           add_suffix: true
