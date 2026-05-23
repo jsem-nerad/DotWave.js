@@ -394,21 +394,11 @@
         const radiusX = dot.radius + stretchAmount;
         const radiusY = dot.radius;
         
-        // Save context state
-        this.ctx.save();
-        
-        // Translate to dot position and rotate
-        this.ctx.translate(dot.x, dot.y);
-        this.ctx.rotate(dot.currentAngle);
-        
-        // Draw stretched ellipse
+        // Draw stretched ellipse with built-in rotation
         this.ctx.beginPath();
-        this.ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(dot.x, dot.y, radiusX, radiusY, dot.currentAngle, 0, Math.PI * 2);
         this.ctx.fillStyle = fillStyle;
         this.ctx.fill();
-        
-        // Restore context state
-        this.ctx.restore();
     };
     
     /**
