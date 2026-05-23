@@ -223,13 +223,9 @@
             
             // Only add rotation properties if stretching is enabled
             if (this.options.dotStretch) {
+                dot.currentAngle = 0;
                 if (this.options.rotSmoothing) {
-                    // Smooth rotation: track current and target angles
-                    dot.currentAngle = 0;
                     dot.targetAngle = 0;
-                } else {
-                    // Instant rotation: only need current angle
-                    dot.currentAngle = 0;
                 }
             }
             
