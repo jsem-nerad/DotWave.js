@@ -507,61 +507,74 @@
     };
     
     /**
+     * Map of common CSS color names to RGB values
+     */
+    DotWave.prototype._namedColors = {
+        'white': '255, 255, 255',
+        'black': '0, 0, 0',
+        'red': '255, 0, 0',
+        'green': '0, 128, 0',
+        'blue': '0, 0, 255',
+        'yellow': '255, 255, 0',
+        'orange': '255, 165, 0',
+        'purple': '128, 0, 128',
+        'pink': '255, 192, 203',
+        'brown': '165, 42, 42',
+        'gray': '128, 128, 128',
+        'grey': '128, 128, 128',
+        'cyan': '0, 255, 255',
+        'magenta': '255, 0, 255',
+        'lime': '0, 255, 0',
+        'maroon': '128, 0, 0',
+        'navy': '0, 0, 128',
+        'olive': '128, 128, 0',
+        'teal': '0, 128, 128',
+        'silver': '192, 192, 192',
+        'gold': '255, 215, 0',
+        'indigo': '75, 0, 130',
+        'violet': '238, 130, 238',
+        'turquoise': '64, 224, 208'
+    };
+
+    /**
      * Convert color to RGBA format
      * @param {String} color - CSS color
      * @param {Number} alpha - Alpha value
      * @return {String} RGBA color string
      */
     DotWave.prototype._getRGBA = function(color, alpha) {
+        if (typeof color !== 'string') {
+            return `rgba(255, 255, 255, ${alpha})`;
+        }
+
+        const c = color.toLowerCase();
+
+        // For named colors, use the predefined map
+        const rgb = this._namedColors[c];
+        if (rgb) {
+            return `rgba(${rgb}, ${alpha})`;
+        }
+
         // If already RGBA format
-        if (color.startsWith('rgba')) {
+        if (c.startsWith('rgba')) {
             return color;
         }
         
         // If RGB format
-        if (color.startsWith('rgb')) {
-            return color.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+        if (c.startsWith('rgb')) {
+            return color.replace(/rgb/i, 'rgba').replace(')', `, ${alpha})`);
         }
         
         // For hex colors
-        if (color.startsWith('#')) {
-            const hex = color.substring(1);
+        if (c.startsWith('#')) {
+            const hex = c.substring(1);
             const r = parseInt(hex.length === 3 ? hex.charAt(0) + hex.charAt(0) : hex.substring(0, 2), 16);
             const g = parseInt(hex.length === 3 ? hex.charAt(1) + hex.charAt(1) : hex.substring(2, 4), 16);
             const b = parseInt(hex.length === 3 ? hex.charAt(2) + hex.charAt(2) : hex.substring(4, 6), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
         
-        // For named colors, use a predefined map
-        const namedColors = {
-            'white': 'rgba(255, 255, 255, ' + alpha + ')',
-            'black': 'rgba(0, 0, 0, ' + alpha + ')',
-            'red': 'rgba(255, 0, 0, ' + alpha + ')',
-            'green': 'rgba(0, 128, 0, ' + alpha + ')',
-            'blue': 'rgba(0, 0, 255, ' + alpha + ')',
-            'yellow': 'rgba(255, 255, 0, ' + alpha + ')',
-            'orange': 'rgba(255, 165, 0, ' + alpha + ')',
-            'purple': 'rgba(128, 0, 128, ' + alpha + ')',
-            'pink': 'rgba(255, 192, 203, ' + alpha + ')',
-            'brown': 'rgba(165, 42, 42, ' + alpha + ')',
-            'gray': 'rgba(128, 128, 128, ' + alpha + ')',
-            'grey': 'rgba(128, 128, 128, ' + alpha + ')',
-            'cyan': 'rgba(0, 255, 255, ' + alpha + ')',
-            'magenta': 'rgba(255, 0, 255, ' + alpha + ')',
-            'lime': 'rgba(0, 255, 0, ' + alpha + ')',
-            'maroon': 'rgba(128, 0, 0, ' + alpha + ')',
-            'navy': 'rgba(0, 0, 128, ' + alpha + ')',
-            'olive': 'rgba(128, 128, 0, ' + alpha + ')',
-            'teal': 'rgba(0, 128, 128, ' + alpha + ')',
-            'silver': 'rgba(192, 192, 192, ' + alpha + ')',
-            'gold': 'rgba(255, 215, 0, ' + alpha + ')',
-            'indigo': 'rgba(75, 0, 130, ' + alpha + ')',
-            'violet': 'rgba(238, 130, 238, ' + alpha + ')',
-            'turquoise': 'rgba(64, 224, 208, ' + alpha + ')'
-        };
-
-        
-        return namedColors[color.toLowerCase()] || `rgba(255, 255, 255, ${alpha})`;
+        return `rgba(255, 255, 255, ${alpha})`;
     };
     
     /**
