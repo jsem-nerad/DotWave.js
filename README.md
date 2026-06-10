@@ -14,6 +14,9 @@
 
 - Parallax effect for depth perception
 - Fully customizable (colors, sizes, behavior...)
+- Custom dot shapes (squares, triangles, stars, your own images or draw functions)
+- Color palettes - dots pick random colors from a list you define
+- Motion presets - dots can flow in a stream or swirl in a vortex on their own
 - Dot stretching
 - Dot rotation smoothing
 - No dependencies
@@ -161,6 +164,121 @@ To configure DotWave when initializing, use the class options.
 
 You can find the [list of all available attributes here](#option-list).
 
+# Dot shapes & images
+
+By default, DotWave draws circles. Use the `dotShape` option (or the `dot-shape` attribute) to change that:
+
+| Value        | Result                                                            |
+|--------------|-------------------------------------------------------------------|
+| `"circle"`   | The classic dot (default)                                         |
+| `"square"`   | Square dots                                                       |
+| `"triangle"` | Triangle dots that point in the direction of travel when stretched |
+| `"star"`     | Five-pointed stars                                                |
+| `"image"`    | Draws the image from the `dotImage` option instead of a shape     |
+
+```JavaScript
+// Star-shaped dots
+const dotwave = new DotWave({
+  dotShape: 'star',
+  dotMinSize: 2,
+  dotMaxSize: 6,
+});
+
+// Image dots (e.g. snowflakes, logos, sprites...)
+const snow = new DotWave({
+  dotShape: 'image',
+  dotImage: '/images/snowflake.png',
+  dotMinSize: 4,
+  dotMaxSize: 10,
+});
+```
+
+```xml
+<dot-wave dot-shape="triangle"></dot-wave>
+<dot-wave dot-shape="image" dot-image="/images/snowflake.png" dot-min-size="4" dot-max-size="10"></dot-wave>
+```
+
+Some notes on shapes and images:
+
+- All built-in shapes support dot stretching - they rotate towards their direction of travel and stretch along it, just like circles do.
+- Images keep their aspect ratio and are scaled so their larger side matches the dot diameter. Since the default dot sizes (1-3) are quite small, you will usually want to increase `dotMinSize`/`dotMaxSize` for image dots.
+- While the image is loading (or if it fails to load), dots are drawn as regular circles, so the canvas never appears empty.
+- Dot colors do not apply to images - the image keeps its own colors. Per-dot opacity still applies.
+
+### Custom shape functions (JavaScript only)
+
+For full control, `dotShape` also accepts a function that traces a path centered at `(0, 0)`. DotWave handles position, rotation, stretching and filling for you:
+
+```JavaScript
+const dotwave = new DotWave({
+  // A simple diamond shape
+  dotShape: function(ctx, radius) {
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(radius, 0);
+    ctx.lineTo(0, radius);
+    ctx.lineTo(-radius, 0);
+    ctx.closePath();
+  },
+});
+```
+
+# Color palettes
+
+Instead of a single `dotColor`, you can pass an array of colors with `dotColors`. Each dot picks one color from the palette at random when it is created:
+
+```JavaScript
+const dotwave = new DotWave({
+  dotColors: ['#33a6ed', '#ed33a6', 'gold', 'rgb(166, 237, 51)'],
+});
+```
+
+For the HTML element, use a comma-separated list:
+
+```xml
+<dot-wave dot-colors="#33a6ed, #ed33a6, gold"></dot-wave>
+```
+
+When `dotColors` is set (and not empty), it takes precedence over `dotColor`. Updating `dotColor` or `dotColors` via `updateOptions()` re-rolls the colors of all existing dots without resetting their positions. All CSS color formats supported by `dotColor` (named, hex, RGB/RGBA) work in the palette too.
+
+# Motion presets
+
+By default, dots just wander randomly (and react to your cursor). The `motion` option gives them a direction of their own:
+
+| Value      | Result                                                       |
+|------------|--------------------------------------------------------------|
+| `"none"`   | Classic random wandering (default)                           |
+| `"stream"` | Dots constantly flow in one direction, like a river or snowfall |
+| `"vortex"` | Dots swirl around a configurable center point                |
+
+```JavaScript
+// A stream flowing to the bottom-right
+const stream = new DotWave({
+  motion: 'stream',
+  motionAngle: 45,       // Direction in degrees: 0 = right, 90 = down, 180 = left, 270 = up
+  motionStrength: 0.1,   // How strong the flow is
+});
+
+// A vortex swirling around the center
+const vortex = new DotWave({
+  motion: 'vortex',
+  motionStrength: 0.15,
+  motionCenterX: 0.5,    // Center as a fraction of the canvas size (0-1)
+  motionCenterY: 0.5,
+});
+```
+
+```xml
+<dot-wave motion="stream" motion-angle="270" motion-strength="0.08"></dot-wave>
+<dot-wave motion="vortex" motion-strength="0.15"></dot-wave>
+```
+
+Notes on motion presets:
+
+- Motion presets combine with everything else: cursor reactivity, random movement, friction and `maxSpeed` all still apply. For a perfectly uniform stream, set `randomFactor: 0`.
+- `motionStrength` is a continuous force, so its visible speed is balanced against `friction` and capped by `maxSpeed`.
+- For `vortex`, a negative `motionStrength` reverses the spin direction.
+- The vortex center is relative to the canvas size, so `0.5`/`0.5` always stays in the middle, even after resizing. Values outside `0-1` place the center off-canvas, which works too.
+
 # Methods
 
 ```JavaScript
@@ -209,6 +327,14 @@ dotwave.destroy();
 | dot-max-stretch       | dotMaxStretch         | number  | 20       | Maximum stretch amount                                      |
 | rot-smoothing         | rotSmoothing          | boolean | false    | Smoothly rotates dots instead of snapping                   |
 | rotsmoothingintensity | rotSmoothingIntensity | number  | 150      | Rotation smoothing duration (ms)                            |
+| dot-shape             | dotShape              | string  | "circle" | Dot shape: "circle", "square", "triangle", "star", "image"; JS also accepts a custom draw function |
+| dot-image             | dotImage              | string  | null     | Image URL used when dotShape is "image"                     |
+| dot-colors            | dotColors             | array   | null     | Color palette; each dot picks one at random (overrides dotColor). HTML: comma-separated list |
+| motion                | motion                | string  | "none"   | Autonomous motion preset: "none", "stream" or "vortex"      |
+| motion-angle          | motionAngle           | number  | 0        | Stream direction in degrees (0 = right, 90 = down)          |
+| motion-strength       | motionStrength        | number  | 0.05     | Strength of the motion preset force                         |
+| motion-center-x       | motionCenterX         | number  | 0.5      | Vortex center X as a fraction of canvas width (0-1)         |
+| motion-center-y       | motionCenterY         | number  | 0.5      | Vortex center Y as a fraction of canvas height (0-1)        |
 
 ## For HTML
 
@@ -234,7 +360,15 @@ dotwave.destroy();
   dot-stretch-mult="10"
   dot-max-stretch="20"
   rot-smoothing="false"
-  rot-smoothing-intensity="150">
+  rot-smoothing-intensity="150"
+  dot-shape="circle"
+  dot-image=""
+  dot-colors=""
+  motion="none"
+  motion-angle="0"
+  motion-strength="0.05"
+  motion-center-x="0.5"
+  motion-center-y="0.5">
 </dot-wave>
 ```
 
@@ -263,7 +397,15 @@ const dotwave = new DotWave({
   dotStretchMult: 10,          // How much to stretch the dots
   dotMaxStretch: 20,           // Maximum stretch amount
   rotSmoothing: false,         // Toggle for rotation smoothing of dots
-  rotSmoothingIntensity: 150   // Rotation smoothing duration in milliseconds
+  rotSmoothingIntensity: 150,  // Rotation smoothing duration in milliseconds
+  dotShape: 'circle',          // Dot shape: 'circle', 'square', 'triangle', 'star', 'image' or a custom draw function
+  dotImage: null,              // Image URL used when dotShape is 'image'
+  dotColors: null,             // Array of colors; each dot picks one at random (overrides dotColor)
+  motion: 'none',              // Autonomous motion preset: 'none', 'stream' or 'vortex'
+  motionAngle: 0,              // Stream direction in degrees (0 = right, 90 = down)
+  motionStrength: 0.05,        // Strength of the motion preset force
+  motionCenterX: 0.5,          // Vortex center X as a fraction of canvas width (0-1)
+  motionCenterY: 0.5           // Vortex center Y as a fraction of canvas height (0-1)
 });
 ```
 > *Note, that  `rotSmoothing: false` skips the rotation lerping calculations and is therefore more performant than using `rotSmoothingIntensity: 0`, same logic applies to `dotStretch`.*

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DotWave Shapes, Motion & Color Palettes Example</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .demo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 350px;
+        }
+
+        .demo h2 {
+            color: white;
+            text-shadow: 0 0 8px black;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Star-shaped dots with a color palette -->
+    <div id="demo-stars" class="demo">
+        <h2>Stars with a color palette</h2>
+    </div>
+
+    <!-- Stream motion: dots flow to the right on their own -->
+    <div id="demo-stream" class="demo">
+        <h2>Stream motion</h2>
+    </div>
+
+    <!-- Vortex motion: dots swirl around the center -->
+    <div id="demo-vortex" class="demo">
+        <h2>Vortex motion</h2>
+    </div>
+
+    <!-- DotWave element with the new attributes -->
+    <dot-wave
+        class="demo"
+        dot-shape="triangle"
+        dot-colors="#33a6ed, #ed33a6, #a6ed33"
+        motion="stream"
+        motion-angle="270"
+        motion-strength="0.08">
+        <h2>&lt;dot-wave&gt; element with triangles streaming upwards</h2>
+    </dot-wave>
+
+    <script src="/src/dotwave.js"></script>
+    <script src="/src/dotwave-element.js"></script>
+    <script>
+        // Star-shaped dots, each picking a random color from the palette
+        new DotWave({
+            container: '#demo-stars',
+            dotShape: 'star',
+            dotColors: ['#ffd700', '#ff6b6b', '#4ecdc4', '#c44dff'],
+            dotMinSize: 2,
+            dotMaxSize: 6,
+            dotStretch: false,
+        });
+
+        // Stream: a constant flow to the right (0 degrees)
+        new DotWave({
+            container: '#demo-stream',
+            motion: 'stream',
+            motionAngle: 0,
+            motionStrength: 0.1,
+            dotColors: ['#33a6ed', '#1c6fa3', '#7fc8f0'],
+        });
+
+        // Vortex: dots swirl around the center of the container
+        new DotWave({
+            container: '#demo-vortex',
+            motion: 'vortex',
+            motionStrength: 0.15,
+            motionCenterX: 0.5,
+            motionCenterY: 0.5,
+            dotColors: ['#ff9f43', '#ee5253', '#feca57'],
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 /**
  * DotWave.js - An Interactive Dot Canvas JavaScript Library
  * Creates animated dots that react to cursor movement
- * @version 1.1.0
+ * @version 1.2.0
  */
 (function(global) {
     'use strict';
@@ -34,7 +34,15 @@
             dotStretchMult: 10,          // How much to stretch the dots
             dotMaxStretch: 20,           // Maximum stretch amount
             rotSmoothing: false,         // Toggle for rotation smoothing of dots
-            rotSmoothingIntensity: 150   // Rotation smoothing duration in milliseconds
+            rotSmoothingIntensity: 150,  // Rotation smoothing duration in milliseconds
+            dotShape: 'circle',          // Dot shape: 'circle', 'square', 'triangle', 'star', 'image' or a custom draw function
+            dotImage: null,              // Image URL used when dotShape is 'image'
+            dotColors: null,             // Array of colors; each dot picks one at random (overrides dotColor)
+            motion: 'none',              // Autonomous motion preset: 'none', 'stream' or 'vortex'
+            motionAngle: 0,              // Stream direction in degrees (0 = right, 90 = down)
+            motionStrength: 0.05,        // Strength of the motion preset force
+            motionCenterX: 0.5,          // Vortex center X as a fraction of canvas width (0-1)
+            motionCenterY: 0.5           // Vortex center Y as a fraction of canvas height (0-1)
         };
         
         // Merge options with defaults
@@ -57,7 +65,10 @@
         this.resizeTimeout = null;
         this.lastFrameTime = 0;
         this.isMouseOver = false;
-        
+        this.dotImageEl = null;
+        this.dotImageReady = false;
+        this._dotImageSrc = null;
+
         // Initialize the canvas
         this.init();
     }
@@ -92,7 +103,10 @@
         
         // Set initial canvas size
         this._updateCanvasSize();
-        
+
+        // Start loading the dot image if one is configured
+        this._loadImage();
+
         // Create dots
         this._createDots();
         
@@ -200,6 +214,55 @@
     };
     
     /**
+     * Pick a color for a single dot
+     * Uses a random entry from the dotColors palette when provided,
+     * otherwise falls back to dotColor
+     * @return {String} CSS color
+     */
+    DotWave.prototype._pickDotColor = function() {
+        const colors = this.options.dotColors;
+        if (Array.isArray(colors) && colors.length > 0) {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        return this.options.dotColor;
+    };
+
+    /**
+     * Load the dot image when dotShape is 'image'
+     * Dots are drawn as regular circles until the image finishes loading
+     */
+    DotWave.prototype._loadImage = function() {
+        const src = this.options.dotShape === 'image' ? this.options.dotImage : null;
+
+        if (!src) {
+            this._dotImageSrc = null;
+            this.dotImageEl = null;
+            this.dotImageReady = false;
+            return;
+        }
+
+        // Skip reload if the same image is already loading or loaded
+        if (this._dotImageSrc === src) return;
+
+        this._dotImageSrc = src;
+        this.dotImageReady = false;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            // Ignore stale loads if the image was changed in the meantime
+            if (this._dotImageSrc === src) {
+                this.dotImageEl = img;
+                this.dotImageReady = true;
+            }
+        };
+        img.onerror = () => {
+            console.error('DotWave: Failed to load dot image: ' + src);
+        };
+        img.src = src;
+    };
+
+    /**
      * Create dots with random properties
      */
     DotWave.prototype._createDots = function() {
@@ -215,6 +278,7 @@
                 z: z, // Depth value
                 radius: this.options.dotMinSize + z * (this.options.dotMaxSize - this.options.dotMinSize),
                 alpha: this.options.dotMinOpacity + z * (this.options.dotMaxOpacity - this.options.dotMinOpacity),
+                color: this._pickDotColor(),
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: (Math.random() - 0.5) * 1.5,
                 // Deeper dots move slower to create parallax effect
@@ -337,77 +401,165 @@
      * @param {Number} deltaTime - Time elapsed since last frame
      */
     DotWave.prototype._drawDot = function(dot, deltaTime) {
-        const fillStyle = this._getRGBA(this.options.dotColor, dot.alpha);
-        
-        // Early exit for regular dots when stretching is disabled
-        if (!this.options.dotStretch) {
+        const shape = this.options.dotShape;
+
+        // Calculate stretch amount and rotation when stretching is enabled
+        let stretchAmount = 0;
+        if (this.options.dotStretch) {
+            const vxSq = dot.vx * dot.vx;
+            const vySq = dot.vy * dot.vy;
+            const speed = Math.sqrt(vxSq + vySq);
+
+            // Calculate stretch amount proportional to speed
+            const normalizedSpeed = Math.min(speed / this.options.maxSpeed, 1);
+            stretchAmount = normalizedSpeed * this.options.dotStretchMult;
+
+            // Apply maximum stretch limit if defined
+            if (this.options.dotMaxStretch) {
+                stretchAmount = Math.min(stretchAmount, this.options.dotMaxStretch);
+            }
+
+            if (stretchAmount < 0.01) {
+                // No significant stretch, skip rotation handling
+                stretchAmount = 0;
+            } else {
+                // Calculate target angle based on velocity
+                const targetAngle = Math.atan2(dot.vy, dot.vx);
+
+                // Handle rotation based on rotSmoothing setting
+                if (this.options.rotSmoothing) {
+                    // Smooth rotation: interpolate towards target
+                    dot.targetAngle = targetAngle;
+
+                    // Calculate rotation lerp factor based on deltaTime and rotSmoothingIntensity
+                    const rotationFactor = this.options.rotSmoothingIntensity <= 0 ?
+                        1 : Math.min(deltaTime / this.options.rotSmoothingIntensity, 1);
+
+                    // Smoothly interpolate current angle towards target
+                    dot.currentAngle = this._lerpAngle(dot.currentAngle, dot.targetAngle, rotationFactor);
+                } else {
+                    // Instant rotation: directly set angle
+                    dot.currentAngle = targetAngle;
+                }
+            }
+        }
+
+        // Image dots are drawn separately
+        if (shape === 'image') {
+            this._drawImageDot(dot, stretchAmount);
+            return;
+        }
+
+        const fillStyle = this._getRGBA(dot.color, dot.alpha);
+
+        // Fast path: default circle without stretch
+        if (stretchAmount === 0 && shape === 'circle') {
             this.ctx.beginPath();
             this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
             this.ctx.fillStyle = fillStyle;
             this.ctx.fill();
             return;
         }
-        
-        // Only calculate stretching-related values when stretching is enabled
-        const vxSq = dot.vx * dot.vx;
-        const vySq = dot.vy * dot.vy;
-        const speed = Math.sqrt(vxSq + vySq);
-        
-        // Calculate stretch amount proportional to speed
-        const normalizedSpeed = Math.min(speed / this.options.maxSpeed, 1);
-        let stretchAmount = normalizedSpeed * this.options.dotStretchMult;
-        
-        // Apply maximum stretch limit if defined
-        if (this.options.dotMaxStretch) {
-            stretchAmount = Math.min(stretchAmount, this.options.dotMaxStretch);
-        }
-        
-        // If there's no significant stretch, draw regular circle
-        if (stretchAmount < 0.01) {
-            this.ctx.beginPath();
-            this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-            this.ctx.fillStyle = fillStyle;
-            this.ctx.fill();
-            return;
-        }
-        
-        // Calculate target angle based on velocity
-        const targetAngle = Math.atan2(dot.vy, dot.vx);
-        
-        // Handle rotation based on rotSmoothing setting
-        if (this.options.rotSmoothing) {
-            // Smooth rotation: interpolate towards target
-            dot.targetAngle = targetAngle;
-            
-            // Calculate rotation lerp factor based on deltaTime and rotSmoothingIntensity
-            const rotationFactor = this.options.rotSmoothingIntensity <= 0 ? 
-                1 : Math.min(deltaTime / this.options.rotSmoothingIntensity, 1);
-            
-            // Smoothly interpolate current angle towards target
-            dot.currentAngle = this._lerpAngle(dot.currentAngle, dot.targetAngle, rotationFactor);
-        } else {
-            // Instant rotation: directly set angle
-            dot.currentAngle = targetAngle;
-        }
-        
-        // Calculate ellipse dimensions
-        const radiusX = dot.radius + stretchAmount;
-        const radiusY = dot.radius;
-        
-        // Save context state
+
+        // Transformed path: rotate towards velocity and stretch along the movement axis
         this.ctx.save();
-        
-        // Translate to dot position and rotate
         this.ctx.translate(dot.x, dot.y);
-        this.ctx.rotate(dot.currentAngle);
-        
-        // Draw stretched ellipse
+        if (stretchAmount > 0) {
+            this.ctx.rotate(dot.currentAngle);
+            this.ctx.scale((dot.radius + stretchAmount) / dot.radius, 1);
+        }
+
         this.ctx.beginPath();
-        this.ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+        this._traceShape(shape, dot.radius);
         this.ctx.fillStyle = fillStyle;
         this.ctx.fill();
-        
-        // Restore context state
+
+        this.ctx.restore();
+    };
+
+    /**
+     * Trace the path of a dot shape centered at the origin
+     * @param {String|Function} shape - Shape name or custom draw function
+     * @param {Number} r - Dot radius
+     */
+    DotWave.prototype._traceShape = function(shape, r) {
+        const ctx = this.ctx;
+
+        // Custom shapes: a function that traces a path centered at (0, 0)
+        if (typeof shape === 'function') {
+            shape(ctx, r);
+            return;
+        }
+
+        switch (shape) {
+            case 'square':
+                ctx.rect(-r, -r, r * 2, r * 2);
+                break;
+            case 'triangle':
+                // Equilateral triangle pointing in the direction of travel
+                ctx.moveTo(r, 0);
+                ctx.lineTo(-r * 0.5, r * 0.866);
+                ctx.lineTo(-r * 0.5, -r * 0.866);
+                ctx.closePath();
+                break;
+            case 'star': {
+                // Five-pointed star
+                const innerR = r * 0.45;
+                let rot = -Math.PI / 2;
+                const step = Math.PI / 5;
+                ctx.moveTo(Math.cos(rot) * r, Math.sin(rot) * r);
+                for (let i = 0; i < 5; i++) {
+                    rot += step;
+                    ctx.lineTo(Math.cos(rot) * innerR, Math.sin(rot) * innerR);
+                    rot += step;
+                    ctx.lineTo(Math.cos(rot) * r, Math.sin(rot) * r);
+                }
+                ctx.closePath();
+                break;
+            }
+            default:
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+        }
+    };
+
+    /**
+     * Draw a dot using the configured image
+     * Falls back to a circle while the image is loading
+     * @param {Object} dot - The dot object
+     * @param {Number} stretchAmount - Stretch amount along the movement axis
+     */
+    DotWave.prototype._drawImageDot = function(dot, stretchAmount) {
+        if (!this.dotImageReady) {
+            this.ctx.beginPath();
+            this.ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = this._getRGBA(dot.color, dot.alpha);
+            this.ctx.fill();
+            return;
+        }
+
+        const img = this.dotImageEl;
+
+        // Scale the image so its larger side matches the dot diameter,
+        // preserving the image aspect ratio
+        const size = dot.radius * 2;
+        const ratio = img.naturalWidth / img.naturalHeight;
+        let w, h;
+        if (ratio >= 1) {
+            w = size;
+            h = size / ratio;
+        } else {
+            h = size;
+            w = size * ratio;
+        }
+
+        this.ctx.save();
+        this.ctx.globalAlpha = dot.alpha;
+        this.ctx.translate(dot.x, dot.y);
+        if (stretchAmount > 0) {
+            this.ctx.rotate(dot.currentAngle);
+            this.ctx.scale((dot.radius + stretchAmount) / dot.radius, 1);
+        }
+        this.ctx.drawImage(img, -w / 2, -h / 2, w, h);
         this.ctx.restore();
     };
     
@@ -451,6 +603,19 @@
             influenceRadiusSq = influenceRadius * influenceRadius; // Avoid sqrt in distance check
             normalizedInfluenceStrength = this.options.influenceStrength;
         }
+
+        // Pre-calculate motion preset values
+        const motion = this.options.motion;
+        const motionStrength = this.options.motionStrength;
+        let streamVX, streamVY, vortexX, vortexY;
+        if (motion === 'stream') {
+            const motionAngleRad = this.options.motionAngle * Math.PI / 180;
+            streamVX = Math.cos(motionAngleRad) * motionStrength;
+            streamVY = Math.sin(motionAngleRad) * motionStrength;
+        } else if (motion === 'vortex') {
+            vortexX = this.options.motionCenterX * this.width;
+            vortexY = this.options.motionCenterY * this.height;
+        }
         
         // Update and draw dots
         for (let i = 0; i < this.dots.length; i++) {
@@ -475,6 +640,25 @@
                 }
             }
             
+            // Apply autonomous motion preset (frame-rate independent)
+            if (motion === 'stream') {
+                // Constant directional flow
+                dot.vx += streamVX * deltaTime;
+                dot.vy += streamVY * deltaTime;
+            } else if (motion === 'vortex') {
+                const cdx = dot.x - vortexX;
+                const cdy = dot.y - vortexY;
+                const cDist = Math.sqrt(cdx * cdx + cdy * cdy) || 1;
+                const nx = cdx / cDist;
+                const ny = cdy / cDist;
+
+                // Tangential force spins dots around the center, with a slight
+                // inward pull (fading near the center) to hold the swirl together
+                const inward = 0.2 * Math.min(cDist / 100, 1);
+                dot.vx += (-ny - nx * inward) * motionStrength * deltaTime;
+                dot.vy += (nx - ny * inward) * motionStrength * deltaTime;
+            }
+
             // Add some randomness to movement (frame-rate independent)
             dot.vx += (Math.random() - 0.5) * randomFactor * deltaTime;
             dot.vy += (Math.random() - 0.5) * randomFactor * deltaTime;
@@ -595,13 +779,24 @@
      * @param {Object} options - New options
      */
     DotWave.prototype.updateOptions = function(options) {
-        this.options = this._mergeOptions(this.options, options || {});
-        
+        options = options || {};
+        this.options = this._mergeOptions(this.options, options);
+
         // Recreate dots if number changed, stretching was toggled, or rotation settings changed
-        if (options.numDots !== undefined || 
-            options.dotStretch !== undefined || 
+        if (options.numDots !== undefined ||
+            options.dotStretch !== undefined ||
             options.rotSmoothing !== undefined) {
             this._createDots();
+        } else if (options.dotColor !== undefined || options.dotColors !== undefined) {
+            // Reassign dot colors without resetting positions
+            for (let i = 0; i < this.dots.length; i++) {
+                this.dots[i].color = this._pickDotColor();
+            }
+        }
+
+        // Reload the dot image if the shape or image changed
+        if (options.dotShape !== undefined || options.dotImage !== undefined) {
+            this._loadImage();
         }
     };
     

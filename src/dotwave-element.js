@@ -12,11 +12,13 @@ class DotWaveElement extends HTMLElement {
   // Define which attributes to observe for changes
   static get observedAttributes() {
     return [
-      'num-dots', 'dot-color', 'background-color', 'dot-min-size', 'dot-max-size',
+      'num-dots', 'dot-color', 'dot-colors', 'background-color', 'dot-min-size', 'dot-max-size',
       'dot-min-opacity', 'dot-max-opacity', 'influence-radius', 'influence-strength',
       'random-factor', 'friction', 'max-speed', 'reactive', 'z-index',
       'mouse-speed-decay', 'max-mouse-speed', 'dot-stretch', 'dot-stretch-mult',
-      'dot-max-stretch', 'rot-smoothing', 'rot-smoothing-intensity'
+      'dot-max-stretch', 'rot-smoothing', 'rot-smoothing-intensity',
+      'dot-shape', 'dot-image', 'motion', 'motion-angle', 'motion-strength',
+      'motion-center-x', 'motion-center-y'
     ];
   }
 
@@ -33,6 +35,32 @@ class DotWaveElement extends HTMLElement {
     if (oldValue !== newValue && this.isInitialized && this.dotwave) {
       this.updateDotWaveOptions();
     }
+  }
+
+  // Split a comma-separated color list, ignoring commas inside
+  // parentheses so values like rgb(0, 255, 0) stay intact
+  static parseColorList(value) {
+    if (!value) return null;
+
+    const items = [];
+    let depth = 0;
+    let current = '';
+
+    for (const char of value) {
+      if (char === '(') depth++;
+      else if (char === ')') depth--;
+
+      if (char === ',' && depth === 0) {
+        items.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    items.push(current.trim());
+
+    const filtered = items.filter(Boolean);
+    return filtered.length > 0 ? filtered : null;
   }
 
   // Called when element is removed from DOM
@@ -52,9 +80,10 @@ class DotWaveElement extends HTMLElement {
     const attributeMap = {
       'num-dots': { prop: 'numDots', type: 'number', default: 400 },
       'dot-color': { prop: 'dotColor', type: 'string', default: 'white' },
+      'dot-colors': { prop: 'dotColors', type: 'array', default: null },
       'background-color': { prop: 'backgroundColor', type: 'string', default: 'black' },
       'dot-min-size': { prop: 'dotMinSize', type: 'number', default: 1 },
-      'dot-maxs-ize': { prop: 'dotMaxSize', type: 'number', default: 3 },
+      'dot-max-size': { prop: 'dotMaxSize', type: 'number', default: 3 },
       'dot-min-opacity': { prop: 'dotMinOpacity', type: 'number', default: 0.5 },
       'dot-max-opacity': { prop: 'dotMaxOpacity', type: 'number', default: 1 },
       'influence-radius': { prop: 'influenceRadius', type: 'number', default: 100 },
@@ -70,7 +99,14 @@ class DotWaveElement extends HTMLElement {
       'dot-stretch-mult': { prop: 'dotStretchMult', type: 'number', default: 10 },
       'dot-max-stretch': { prop: 'dotMaxStretch', type: 'number', default: 20 },
       'rot-smoothing': { prop: 'rotSmoothing', type: 'boolean', default: false },
-      'rot-smoothing-intensity': { prop: 'rotSmoothingIntensity', type: 'number', default: 150 }
+      'rot-smoothing-intensity': { prop: 'rotSmoothingIntensity', type: 'number', default: 150 },
+      'dot-shape': { prop: 'dotShape', type: 'string', default: 'circle' },
+      'dot-image': { prop: 'dotImage', type: 'string', default: null },
+      'motion': { prop: 'motion', type: 'string', default: 'none' },
+      'motion-angle': { prop: 'motionAngle', type: 'number', default: 0 },
+      'motion-strength': { prop: 'motionStrength', type: 'number', default: 0.05 },
+      'motion-center-x': { prop: 'motionCenterX', type: 'number', default: 0.5 },
+      'motion-center-y': { prop: 'motionCenterY', type: 'number', default: 0.5 }
     };
 
     // Process each attribute
@@ -85,6 +121,9 @@ class DotWaveElement extends HTMLElement {
         } else if (config.type === 'number') {
           const numValue = parseFloat(value);
           options[config.prop] = isNaN(numValue) ? config.default : numValue;
+        } else if (config.type === 'array') {
+          // Comma-separated list, e.g. dot-colors="#ff0000, #00ff00, blue"
+          options[config.prop] = DotWaveElement.parseColorList(value) || config.default;
         } else {
           // String values
           options[config.prop] = value || config.default;
@@ -194,6 +233,56 @@ class DotWaveElement extends HTMLElement {
       this.setAttribute('background-color', value);
     } else {
       this.removeAttribute('background-color');
+    }
+  }
+
+  get dotColors() {
+    return DotWaveElement.parseColorList(this.getAttribute('dot-colors'));
+  }
+
+  set dotColors(value) {
+    if (Array.isArray(value) && value.length > 0) {
+      this.setAttribute('dot-colors', value.join(','));
+    } else if (typeof value === 'string' && value) {
+      this.setAttribute('dot-colors', value);
+    } else {
+      this.removeAttribute('dot-colors');
+    }
+  }
+
+  get dotShape() {
+    return this.getAttribute('dot-shape') || 'circle';
+  }
+
+  set dotShape(value) {
+    if (value) {
+      this.setAttribute('dot-shape', value);
+    } else {
+      this.removeAttribute('dot-shape');
+    }
+  }
+
+  get dotImage() {
+    return this.getAttribute('dot-image');
+  }
+
+  set dotImage(value) {
+    if (value) {
+      this.setAttribute('dot-image', value);
+    } else {
+      this.removeAttribute('dot-image');
+    }
+  }
+
+  get motion() {
+    return this.getAttribute('motion') || 'none';
+  }
+
+  set motion(value) {
+    if (value) {
+      this.setAttribute('motion', value);
+    } else {
+      this.removeAttribute('motion');
     }
   }
 
